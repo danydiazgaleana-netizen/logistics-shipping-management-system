@@ -1,0 +1,9 @@
+﻿OV,Numero de pedido,Nombre del cliente,Cajas,Bolsas,fecha de entrega,ubicacion,horario entrega,nombre de quien entrega,nombre de la paqueteria,nombre de quien recibe (chofer),fecha de salida,hora de salida,valor ($MXN),dias de estancia,Numero de guia,Archivo guia
+2003268.0,PEGE2026-498-2003268,Cliente A,12.0,2.0,2026-07-28,Puebla,09:00,Juan Pérez,DHL,Chofer 1,2026-07-26,08:00,15000.5,1.0,,
+2003269.0,PEGE2026-499-2003269,Cliente B,8.0,1.0,2026-07-29,CDMX,12:00,Carlos López,FedEx,Chofer 2,2026-07-26,08:30,8400.0,2.0,,
+2003270.0,PEGE2026-500-2003270,Cliente C,15.0,4.0,2026-07-30,Monterrey,15:00,Ana Gómez,Estafeta,Chofer 3,2026-07-27,09:00,22100.0,0.0,,
+,,Revisar Correo Ingresado,,,,,,,,,,,,,,
+2003268.0,498,Demetrio  Cortes,2.0,0.0,,Puebla,,,FEDEX,,,,500.0,,3000000.0,PEGE2026-79-2003145.pdf
+PEGE2026-498-2003268,498,jdshkas,2.0,1.0,,puebla,,,fedez,,,,20039.0,,eoiuqeiw,PEGE2026-79-2003145.pdf
+2003268,PEGE2026-498-2003268,Dany,7,0,10/07/26,Morelos,5:00,Alejandro,FEDEX,jonathan,10/07/26,5:00,600,0,098757765567,PEGE2026-79-2003145.pdf
+2003267,PEGE2026-496-2003267,Jesus,5,0,10/07/26,Guerrero,2:00,Alejandro,FEDEX,Jonathan,21/07/26,6:00,600,0,37647736478,PEGE2026-79-2003145.pdf
