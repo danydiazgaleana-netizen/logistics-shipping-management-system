@@ -1,0 +1,4 @@
+OV,Numero de pedido,Nombre del cliente,Cajas,Bolsas,fecha de entrega,ubicacion,horario entrega,nombre de quien entrega,nombre de la paqueteria,nombre de quien recibe (chofer),fecha de salida,hora de salida,valor ($MXN),dias de estancia,Numero de guia,Archivo guia
+2003268.0,PEGE2026-498-2003268,Cliente A,12.0,2.0,2026-07-28,Puebla,09:00,Juan Pérez,DHL,Chofer 1,2026-07-26,08:00,15000.5,1.0,GUIA-DHL-88901,guia_498.pdf
+2003269.0,PEGE2026-499-2003269,Cliente B,8.0,1.0,2026-07-29,CDMX,12:00,Carlos López,FedEx,Chofer 2,2026-07-26,08:30,8400.0,2.0,GUIA-FDX-44210,guia_499.pdf
+2003270.0,PEGE2026-500-2003270,Cliente C,15.0,4.0,2026-07-30,Monterrey,15:00,Ana Gómez,Estafeta,Chofer 3,2026-07-27,09:00,22100.0,0.0,GUIA-EST-11293,guia_500.pdf
