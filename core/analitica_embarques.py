@@ -1,4 +1,32 @@
 import pandas as pd
+import os
+
+def cargar_y_validar_datos(ruta_csv):
+    """
+    Valida, limpia y tipa el maestro de embarques antes de procesarlo.
+    Maneja errores si el archivo no existe o si los datos vienen alterados.
+    """
+    if not os.path.exists(ruta_csv):
+        raise FileNotFoundError(f"Error crítico: No se encontró el archivo en la ruta {ruta_csv}")
+    
+    try:
+        df = pd.read_csv(ruta_csv)
+    except Exception as e:
+        raise IOError(f"Error al leer el archivo CSV: {e}")
+    
+    # Limpieza de espacios en columnas de texto
+    columnas_texto = ['Cliente', 'Ubicación', 'Paquetería', 'Guía']
+    for col in columnas_texto:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
+            
+    # Forzar tipado numérico para evitar errores en cálculos
+    columnas_numericas = ['Cajas', 'Bolsas', 'Valor (MXN)', 'Estancia (Días)']
+    for col in columnas_numericas:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0.0)
+            
+
 
 def analizar_embarques(ruta_csv):
     # Cargar el archivo CSV
