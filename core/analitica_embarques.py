@@ -31,3 +31,24 @@ if __name__ == "__main__":
     # Ruta del archivo dummy que subimos a GitHub
     archivo_maestro = "data/maestro_embarques_dummy.csv"
     analizar_embarques(archivo_maestro)
+
+    import pandas as pd
+
+def predecir_riesgo_retraso(df):
+    """
+    Función predictiva básica: Evalúa la estancia actual y la paquetería 
+    para anticipar un riesgo potencial de retraso en la entrega.
+    """
+    print("\n--- MOTOR DE ANÁLISIS PREDICTIVO (RIESGO DE RETRASO) ---")
+    
+    # Criterio predictivo de ejemplo: 
+    # Si la estancia registrada es >= 2 días o si ciertos destinos superan el umbral
+    condicion_riesgo = (df['Estancia (Días)'] >= 2.0) | (df['Paquetería'] == 'Estafeta')
+    
+    df['Riesgo_予測'] = 'Bajo'
+    df.loc[condicion_riesgo, 'Riesgo_予測'] = 'Alto (Posible Cuello de Botella)'
+    
+    for index, row in df.iterrows():
+        print(f"OV: {row['OV']} | Destino: {row['Ubicación']} | Paquetería: {row['Paquetería']} -> Alerta: {row['Riesgo_予測']}")
+        
+    return df

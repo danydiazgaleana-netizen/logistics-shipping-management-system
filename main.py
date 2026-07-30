@@ -1,29 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-Interfaz Gráfica Oficial - Red de Datos Implacable Grupo REV (Gestión Multicanal y Estatus)
-Con Control de Acceso, Notificaciones Flotantes, Badges y Bandeja de Notificaciones Persistente
-(Versión con Diseño Profesional y Moderno)
+Interfaz Gráfica Oficial - Grupo REV (Gestión Multicanal y Estatus)
+(Versión con Base de Datos Integrada - SQLite)
 """
 import os
 import shutil
-import subprocess
-import platform
+import sqlite3
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import messagebox, filedialog, ttk
+import customtkinter as ctk
 import pandas as pd
 from datetime import datetime
 
-# ==========================================
-# CLASE DE AUTENTICACIÓN (CONTROL DE ACCESO)
-# ==========================================
-class VentanaLogin(tk.Toplevel):
+ctk.set_appearance_mode("System")
+ctk.set_default_color_theme("blue")
+
+class VentanaLogin(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
         self.title("Grupo REV | Control de Acceso Autorizado")
-        self.geometry("480x360")
+        self.geometry("450x320")
         self.resizable(False, False)
-        self.config(bg="#f4f6f9")
         
         self.update_idletasks()
         ancho = self.winfo_width()
@@ -33,63 +31,38 @@ class VentanaLogin(tk.Toplevel):
         self.geometry(f"{ancho}x{alto}+{x}+{y}")
         
         self.autorizado = False
-
         self.usuarios_autorizados = {
             "danydiazgaleana@gmail.com": "Caretas24",
             "logistica@gruporev.com": "Caretas24",
             "embarques@gruporev.com": "Caretas24",
             "admin@gruporev.com": "Caretas24"
         }
-
         self.crear_widgets_login()
         self.protocol("WM_DELETE_WINDOW", self.cerrar_aplicacion)
 
     def crear_widgets_login(self):
-        # Contenedor principal con estilo moderno
-        frame_main = tk.Frame(self, bg="#ffffff", bd=1, relief=tk.SOLID)
-        frame_main.place(relx=0.5, rely=0.5, anchor=tk.CENTER, width=430, height=310)
+        frame_main = ctk.CTkFrame(self, fg_color="transparent")
+        frame_main.pack(fill=tk.BOTH, expand=True, padx=30, pady=30)
 
-        lbl_header = tk.Label(frame_main, text="GRUPO REV", font=("Segoe UI", 14, "bold"), fg="#1e293b", bg="#ffffff")
-        lbl_header.pack(pady=(20, 5))
+        ctk.CTkLabel(frame_main, text="GRUPO REV", font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold")).pack(pady=(10, 5))
+        ctk.CTkLabel(frame_main, text="Credenciales corporativas autorizadas\npara Módulos de Logística y Embarques.", font=ctk.CTkFont(family="Segoe UI", size=12), text_color="gray").pack(pady=(0, 20))
 
-        lbl_info = tk.Label(
-            frame_main, 
-            text="Credenciales corporativas autorizadas\npara Módulos de Logística y Embarques.", 
-            font=("Segoe UI", 9), 
-            fg="#64748b",
-            bg="#ffffff",
-            justify=tk.CENTER
-        )
-        lbl_info.pack(pady=(0, 15))
-
-        frame_inputs = tk.Frame(frame_main, bg="#ffffff")
-        frame_inputs.pack(fill=tk.X, padx=30)
-
-        lbl_user = tk.Label(frame_inputs, text="Correo Electrónico / Usuario", font=("Segoe UI", 9, "bold"), fg="#334155", bg="#ffffff")
-        lbl_user.pack(anchor=tk.W, pady=(0, 2))
-        
-        self.entry_user = ttk.Entry(frame_inputs, font=("Segoe UI", 10))
-        self.entry_user.pack(fill=tk.X, pady=(0, 10))
+        self.entry_user = ctk.CTkEntry(frame_main, placeholder_text="Correo Electrónico / Usuario", width=350, height=35, font=("Segoe UI", 12))
+        self.entry_user.pack(pady=8)
         self.entry_user.focus()
 
-        lbl_pass = tk.Label(frame_inputs, text="Contraseña", font=("Segoe UI", 9, "bold"), fg="#334155", bg="#ffffff")
-        lbl_pass.pack(anchor=tk.W, pady=(0, 2))
-        
-        self.entry_pass = ttk.Entry(frame_inputs, font=("Segoe UI", 10), show="*")
-        self.entry_pass.pack(fill=tk.X, pady=(0, 15))
+        self.entry_pass = ctk.CTkEntry(frame_main, placeholder_text="Contraseña", show="*", width=350, height=35, font=("Segoe UI", 12))
+        self.entry_pass.pack(pady=8)
         self.entry_pass.bind("<Return>", lambda event: self.verificar_credenciales())
 
-        btn_ingresar = tk.Button(
-            frame_main, text="Ingresar al Sistema", font=("Segoe UI", 10, "bold"),
-            bg="#0f172a", fg="#ffffff", activebackground="#1e293b", activeforeground="#ffffff",
-            relief=tk.FLAT, cursor="hand2", command=self.verificar_credenciales
-        )
-        btn_ingresar.pack(fill=tk.X, padx=30, ipady=6)
+        ctk.CTkButton(
+            frame_main, text="Ingresar al Sistema", font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+            fg_color="#0284c7", hover_color="#0369a1", width=350, height=38, command=self.verificar_credenciales
+        ).pack(pady=(20, 0))
 
     def verificar_credenciales(self):
         usuario = self.entry_user.get().strip().lower()
         password = self.entry_pass.get().strip()
-
         if usuario in self.usuarios_autorizados and self.usuarios_autorizados[usuario] == password:
             self.autorizado = True
             self.destroy()
@@ -101,48 +74,31 @@ class VentanaLogin(tk.Toplevel):
         self.parent.destroy()
 
 
-# ==========================================
-# CLASE DE NOTIFICACIÓN FLOTANTE (TOAST)
-# ==========================================
-class VentanaToast(tk.Toplevel):
+class VentanaToast(ctk.CTkToplevel):
     def __init__(self, parent, titulo, mensaje):
         super().__init__(parent)
         self.overrideredirect(True)
         self.attributes("-topmost", True)
-        self.config(bg="#0f172a")
-        
-        ancho = 380
-        alto = 90
+        ancho, alto = 380, 90
         x = parent.winfo_screenwidth() - ancho - 30
         y = parent.winfo_screenheight() - alto - 80
         self.geometry(f"{ancho}x{alto}+{x}+{y}")
 
-        frame_interior = tk.Frame(self, bg="#ffffff", bd=0)
-        frame_interior.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        frame = ctk.CTkFrame(self, fg_color="#1e293b", corner_radius=8)
+        frame.pack(fill=tk.BOTH, expand=True)
 
-        # Barra lateral estética de acento
-        accent_bar = tk.Frame(frame_interior, bg="#0284c7", width=6)
-        accent_bar.pack(side=tk.LEFT, fill=tk.Y)
+        ctk.CTkFrame(frame, fg_color="#0284c7", width=6, corner_radius=0).pack(side=tk.LEFT, fill=tk.Y)
+        content = ctk.CTkFrame(frame, fg_color="transparent")
+        content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=12, pady=10)
 
-        content_frame = tk.Frame(frame_interior, bg="#ffffff")
-        content_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=12, pady=8)
-
-        lbl_titulo = tk.Label(content_frame, text=f"{titulo}", font=("Segoe UI", 10, "bold"), fg="#0f172a", bg="#ffffff", anchor="w")
-        lbl_titulo.pack(fill=tk.X, pady=(2, 2))
-
-        lbl_msg = tk.Label(content_frame, text=mensaje, font=("Segoe UI", 9), fg="#475569", bg="#ffffff", anchor="w", justify=tk.LEFT, wraplength=330)
-        lbl_msg.pack(fill=tk.X)
-
+        ctk.CTkLabel(content, text=titulo, font=ctk.CTkFont(family="Segoe UI", size=11, weight="bold"), text_color="white").pack(anchor="w", pady=(0, 2))
+        ctk.CTkLabel(content, text=mensaje, font=ctk.CTkFont(family="Segoe UI", size=10), text_color="#cbd5e1", wraplength=330, justify="left").pack(anchor="w")
         self.after(5000, self.destroy)
 
 
-# ==========================================
-# CLASE PRINCIPAL DE LA APLICACIÓN
-# ==========================================
-class AppGrupoREV(tk.Tk):
+class AppGrupoREV(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.withdraw()
         
         login = VentanaLogin(self)
         self.wait_window(login)
@@ -151,21 +107,17 @@ class AppGrupoREV(tk.Tk):
             self.destroy()
             return
 
-        self.deiconify()
-        self.title("Grupo REV | Red de Datos Implacable: Gestión Multicanal de Embarques")
-        self.geometry("1500x850")
+        self.title("Grupo REV | Gestión Logística Multicanal (Base de Datos Local)")
+        self.geometry("1450x850")
         self.state("zoomed")
-        
-        # Configurar Estilos Modernos (TTK Themes/Styles)
-        self.configurar_estilos()
 
         self.carpeta_datos = "./data"
         self.carpeta_guias = "./guias_maestras"
-        
-        if not os.path.exists(self.carpeta_datos):
-            os.makedirs(self.carpeta_datos, exist_ok=True)
-        if not os.path.exists(self.carpeta_guias):
-            os.makedirs(self.carpeta_guias, exist_ok=True)
+        os.makedirs(self.carpeta_datos, exist_ok=True)
+        os.makedirs(self.carpeta_guias, exist_ok=True)
+
+        self.db_path = os.path.join(self.carpeta_datos, "grupo_rev.db")
+        self.inicializar_base_datos()
 
         self.canales = ["VL", "PEGE", "TIAU", "MUESTRAS", "AMAZON", "MH"]
         self.lista_estatus = ["En espera", "En camino", "Entregado", "Devolucion"]
@@ -179,209 +131,156 @@ class AppGrupoREV(tk.Tk):
         ]
 
         self.archivo_guia_temp = ""
+        self.frames_vistas = {}
 
-        self.crear_widgets()
+        self.crear_estructura_principal()
         self.cargar_datos_todos_canales()
 
-    def configurar_estilos(self):
-        self.style = ttk.Style()
-        self.style.theme_use('clam')
+    def obtener_conexion(self):
+        return sqlite3.connect(self.db_path)
+
+    def inicializar_base_datos(self):
+        conn = self.obtener_conexion()
+        cursor = conn.cursor()
         
-        # Paleta de colores corporativa limpia y profesional
-        COLOR_BG = "#f8fafc"
-        COLOR_PRIMARY = "#0f172a"
-        COLOR_ACCENT = "#0284c7"
-        
-        self.config(bg=COLOR_BG)
-        
-        # Configuración general de componentes TTK
-        self.style.configure('.', background=COLOR_BG, foreground="#334155", font=("Segoe UI", 9))
-        self.style.configure('TNotebook', background=COLOR_BG, borderwidth=0)
-        self.style.configure('TNotebook.Tab', font=("Segoe UI", 10, "bold"), padding=[14, 8], background="#e2e8f0", foreground="#475569")
-        self.style.map('TNotebook.Tab', background=[('selected', COLOR_PRIMARY)], foreground=[('selected', '#ffffff')])
-        
-        self.style.configure('TLabelframe', background=COLOR_BG, bordercolor="#cbd5e1", relief="solid")
-        self.style.configure('TLabelframe.Label', font=("Segoe UI", 10, "bold"), foreground=COLOR_PRIMARY, background=COLOR_BG)
-        
-        self.style.configure('Treeview', font=("Segoe UI", 9), rowheight=26, background="#ffffff", fieldbackground="#ffffff", bordercolor="#cbd5e1")
-        self.style.configure('Treeview.Heading', font=("Segoe UI", 9, "bold"), background="#1e293b", foreground="#ffffff", relief="flat")
-        self.style.map('Treeview.Heading', background=[('active', COLOR_ACCENT)])
+        canales = ["VL", "PEGE", "TIAU", "MUESTRAS", "AMAZON", "MH"]
+        for canal in canales:
+            cursor.execute(f"""
+                CREATE TABLE IF NOT EXISTS canal_{canal.lower()} (
+                    OV TEXT PRIMARY KEY,
+                    Numero_de_pedido TEXT,
+                    Nombre_del_cliente TEXT,
+                    Cajas TEXT,
+                    Bolsas TEXT,
+                    fecha_de_envio TEXT,
+                    fecha_de_entrega TEXT,
+                    ubicacion TEXT,
+                    horario_entrega TEXT,
+                    nombre_de_quien_entrega TEXT,
+                    nombre_de_la_paqueteria TEXT,
+                    nombre_de_quien_recibe_chofer TEXT,
+                    fecha_de_salida TEXT,
+                    hora_de_salida TEXT,
+                    valor_MXN TEXT,
+                    dias_de_estancia TEXT,
+                    Estatus TEXT,
+                    Numero_de_guia TEXT,
+                    Archivo_guia TEXT
+                )
+            """)
 
-    def registrar_y_mostrar_notificacion(self, tipo_origen, titulo, mensaje):
-        """Guarda la notificación en archivo persistente y lanza el toast visual"""
-        try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            ruta_notis = os.path.join(self.carpeta_datos, "bandeja_notificaciones.csv")
-            
-            nueva_notificacion = pd.DataFrame([{
-                'Fecha/Hora': timestamp,
-                'Área / Origen': tipo_origen,
-                'Título': titulo,
-                'Mensaje': mensaje
-            }])
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notificaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha_hora TEXT,
+                area_origen TEXT,
+                titulo TEXT,
+                mensaje TEXT
+            )
+        """)
 
-            if os.path.exists(ruta_notis):
-                df_notis = pd.read_csv(ruta_notis, dtype=str)
-                df_notis = pd.concat([df_notis, nueva_notificacion], ignore_index=True)
-            else:
-                df_notis = nueva_notificacion
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS errores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha_hora TEXT,
+                origen TEXT,
+                ov TEXT,
+                descripcion TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
 
-            df_notis.to_csv(ruta_notis, index=False, encoding='utf-8-sig')
+    def crear_estructura_principal(self):
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
-            # Mostrar la alerta flotante instantánea
-            VentanaToast(self, titulo, mensaje)
+        self.sidebar = ctk.CTkFrame(self, width=240, corner_radius=0, fg_color=("#1e293b", "#0f172a"))
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.sidebar.grid_rowconfigure(16, weight=1)
 
-            # Refrescar la tabla de la bandeja si está creada
-            if hasattr(self, 'tree_notificaciones'):
-                self.cargar_datos_bandeja()
+        ctk.CTkLabel(self.sidebar, text="GRUPO REV", font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"), text_color="white").grid(row=0, column=0, padx=20, pady=(25, 10), sticky="w")
+        ctk.CTkLabel(self.sidebar, text="MÓDULO LOGÍSTICO", font=ctk.CTkFont(family="Segoe UI", size=10), text_color="#94a3b8").grid(row=1, column=0, padx=20, pady=(0, 15), sticky="w")
 
-        except Exception as e:
-            print("Error al registrar notificación:", e)
+        botones_menu = [
+            ("📋 Bitácora General", lambda: self.mostrar_vista("general")),
+            ("📦 Captura Logística", lambda: self.mostrar_vista("logistica")),
+            ("🚚 Captura Embarques", lambda: self.mostrar_vista("embarques")),
+            ("🔔 Notificaciones", lambda: self.mostrar_vista("notificaciones")),
+            ("⚠️ Historial de Errores", self.abrir_ventana_errores)
+        ]
 
-    def obtener_ruta_csv(self, canal):
-        return os.path.join(self.carpeta_datos, f"maestro_embarques_{canal.lower()}.csv")
+        for idx, (txt, cmd) in enumerate(botones_menu, start=2):
+            ctk.CTkButton(
+                self.sidebar, text=txt, command=cmd, 
+                font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
+                fg_color="transparent", text_color="#f8fafc", hover_color="#334155",
+                anchor="w", height=38
+            ).grid(row=idx, column=0, sticky="ew", padx=12, pady=2)
 
-    def crear_widgets(self):
-        frame_top_menu = ttk.Frame(self, padding=8)
-        frame_top_menu.pack(side=tk.TOP, fill=tk.X)
-        
-        btn_auditoria_errores = ttk.Button(frame_top_menu, text="Auditoría: Ver Historial de Errores y Discrepancias", command=self.abrir_ventana_errores)
-        btn_auditoria_errores.pack(side=tk.RIGHT, padx=5)
+        ctk.CTkLabel(self.sidebar, text="CANALES", font=ctk.CTkFont(family="Segoe UI", size=10, weight="bold"), text_color="#64748b").grid(row=7, column=0, padx=20, pady=(15, 5), sticky="w")
 
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=12, pady=5)
+        for idx, canal in enumerate(self.canales, start=8):
+            ctk.CTkButton(
+                self.sidebar, text=f"📂  Bitácora {canal}", command=lambda c=canal: self.mostrar_vista(c),
+                font=ctk.CTkFont(family="Segoe UI", size=11),
+                fg_color="transparent", text_color="#cbd5e1", hover_color="#334155",
+                anchor="w", height=30
+            ).grid(row=idx, column=0, sticky="ew", padx=16, pady=1)
 
-        # PESTAÑA 1: Bitácora General
-        self.tab_general = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_general, text=" 📋 1. Bitácora General Consolidada ")
-        self.crear_vista_bitacora_general()
+        self.container = ctk.CTkFrame(self, fg_color="transparent")
+        self.container.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
+        self.container.grid_columnconfigure(0, weight=1)
+        self.container.grid_rowconfigure(0, weight=1)
 
-        # PESTAÑAS 2 a 7: Canales individuales
-        self.trees_canales = {}
+        self.crear_vista_general()
+        self.crear_vista_logistica()
+        self.crear_vista_embarques()
+        self.crear_vista_notificaciones()
         for canal in self.canales:
-            tab_canal = ttk.Frame(self.notebook)
-            self.notebook.add(tab_canal, text=f" 📂 {canal} ")
-            self.crear_vista_canal_individual(tab_canal, canal)
+            self.crear_vista_canal(canal)
 
-        # PESTAÑA 8: Captura Logística
-        self.tab_logistica = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_logistica, text=" 📦 2. Captura Logística ")
-        self.crear_formulario_logistica()
+        self.mostrar_vista("general")
 
-        # PESTAÑA 9: Captura Embarques
-        self.tab_embarques = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_embarques, text=" 🚚 [0] 3. Captura Embarques ")
-        self.crear_formulario_embarques()
+    def mostrar_vista(self, nombre):
+        for vista in self.frames_vistas.values():
+            vista.grid_remove()
+        if nombre in self.frames_vistas:
+            self.frames_vistas[nombre].grid()
 
-        # PESTAÑA 10: Bandeja de Notificaciones Persistente
-        self.tab_bandeja = ttk.Frame(self.notebook)
-        self.notebook.add(self.tab_bandeja, text=" 🔔 Bandeja de Notificaciones ")
-        self.crear_vista_bandeja_notificaciones()
+    def crear_vista_general(self):
+        vista = ctk.CTkFrame(self.container, fg_color="transparent")
+        vista.grid_columnconfigure(0, weight=1)
+        vista.grid_rowconfigure(2, weight=1)
+        self.frames_vistas["general"] = vista
 
-        self.notebook.bind("<<NotebookTabChanged>>", lambda e: self.actualizar_panel_detalle_activo())
-
-    def crear_vista_bandeja_notificaciones(self):
-        frame_superior = ttk.Frame(self.tab_bandeja, padding=5)
-        frame_superior.pack(fill=tk.X, padx=10, pady=5)
-
-        btn_refrescar_notis = ttk.Button(frame_superior, text="🔄 Actualizar Bandeja", command=self.cargar_datos_bandeja)
-        btn_refrescar_notis.pack(side=tk.LEFT, padx=5)
-
-        btn_limpiar_notis = ttk.Button(frame_superior, text="🗑️ Vaciar Historial de Notificaciones", command=self.vaciar_bandeja_notificaciones)
-        btn_limpiar_notis.pack(side=tk.RIGHT, padx=5)
-
-        frame_tabla = ttk.LabelLabelFrame if hasattr(ttk, 'LabelLabelFrame') else ttk.LabelFrame
-        frame_tabla_box = frame_tabla(self.tab_bandeja, text=" Historial de Avisos y Actividad Cruzada (Logística & Embarques) ")
-        frame_tabla_box.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-
-        cols_noti = ['Fecha/Hora', 'Área / Origen', 'Título', 'Mensaje']
+        header = ctk.CTkFrame(vista, fg_color="transparent", height=50)
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 10))
         
-        scroll_y = ttk.Scrollbar(frame_tabla_box, orient=tk.VERTICAL)
-        scroll_x = ttk.Scrollbar(frame_tabla_box, orient=tk.HORIZONTAL)
+        ctk.CTkLabel(header, text="Consolidado Global de Pedidos", font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold")).pack(side=tk.LEFT, padx=5)
+        ctk.CTkButton(header, text="🔄 Actualizar", width=110, command=self.cargar_datos_todos_canales, fg_color="#334155", hover_color="#475569").pack(side=tk.RIGHT, padx=5)
+        ctk.CTkButton(header, text="📊 Exportar Consolidado a Excel", width=180, command=self.exportar_general_a_excel, fg_color="#0284c7", hover_color="#0369a1").pack(side=tk.RIGHT, padx=5)
 
-        self.tree_notificaciones = ttk.Treeview(
-            frame_tabla_box, columns=cols_noti, show='headings', height=15,
-            yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set
-        )
-        scroll_y.config(command=self.tree_notificaciones.yview)
-        scroll_x.config(command=self.tree_notificaciones.xview)
+        kpi_frame = ctk.CTkFrame(vista, fg_color="transparent", height=90)
+        kpi_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
+        kpi_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
-        scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
-        self.tree_notificaciones.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.kpi_total = self.crear_tarjeta_kpi(kpi_frame, "Total Pedidos", "0", 0)
+        self.kpi_espera = self.crear_tarjeta_kpi(kpi_frame, "En Espera", "0", 1)
+        self.kpi_camino = self.crear_tarjeta_kpi(kpi_frame, "En Camino", "0", 2)
+        self.kpi_entregados = self.crear_tarjeta_kpi(kpi_frame, "Entregados", "0", 3)
 
-        anchos_noti = {'Fecha/Hora': 160, 'Área / Origen': 140, 'Título': 220, 'Mensaje': 650}
-        for col in cols_noti:
-            self.tree_notificaciones.heading(col, text=col)
-            self.tree_notificaciones.column(col, width=anchos_noti.get(col, 200), anchor=tk.W)
-
-        self.cargar_datos_bandeja()
-
-    def cargar_datos_bandeja(self):
-        if not hasattr(self, 'tree_notificaciones'):
-            return
-        
-        for row in self.tree_notificaciones.get_children():
-            self.tree_notificaciones.delete(row)
-
-        ruta_notis = os.path.join(self.carpeta_datos, "bandeja_notificaciones.csv")
-        try:
-            if os.path.exists(ruta_notis):
-                df_notis = pd.read_csv(ruta_notis, dtype=str)
-                for _, row in df_notis.iterrows():
-                    valores = [row.get('Fecha/Hora', ''), row.get('Área / Origen', ''), row.get('Título', ''), row.get('Mensaje', '')]
-                    self.tree_notificaciones.insert("", 0, values=valores)
-        except Exception as e:
-            print("Error cargando bandeja de notificaciones:", e)
-
-    def vaciar_bandeja_notificaciones(self):
-        if messagebox.askyesno("Confirmar", "¿Seguro deseas vaciar todo el historial de notificaciones?"):
-            ruta_notis = os.path.join(self.carpeta_datos, "bandeja_notificaciones.csv")
-            if os.path.exists(ruta_notis):
-                os.remove(ruta_notis)
-            self.cargar_datos_bandeja()
-            messagebox.showinfo("Éxito", "La bandeja de notificaciones ha sido vaciada.")
-
-    def actualizar_contadores_pendientes(self):
-        try:
-            total_pendientes = 0
-            for canal in self.canales:
-                ruta_csv = self.obtener_ruta_csv(canal)
-                if os.path.exists(ruta_csv):
-                    df = pd.read_csv(ruta_csv, dtype=str)
-                    if 'Estatus' in df.columns:
-                        pendientes_canal = df[df['Estatus'].str.strip() == 'En espera']
-                        total_pendientes += len(pendientes_canal)
-
-            idx_embarques = self.notebook.index(self.tab_embarques)
-            self.notebook.tab(idx_embarques, text=f" 🚚 [{total_pendientes}] 3. Captura Embarques ")
-        except Exception as e:
-            print("Error actualizando contadores de pestañas:", e)
-
-    def crear_vista_bitacora_general(self):
-        frame_superior = ttk.Frame(self.tab_general, padding=5)
-        frame_superior.pack(fill=tk.X, padx=10, pady=5)
-
-        btn_exportar_general = ttk.Button(frame_superior, text="📊 Exportar Consolidado General a Excel", command=self.exportar_general_a_excel)
-        btn_exportar_general.pack(side=tk.LEFT, padx=5)
-
-        btn_refrescar = ttk.Button(frame_superior, text="🔄 Refrescar Vistas", command=self.cargar_datos_todos_canales)
-        btn_refrescar.pack(side=tk.RIGHT, padx=5)
-
-        frame_tabla = ttk.LabelFrame(self.tab_general, text=" Consolidado Global de Pedidos (Todos los Canales) ")
-        frame_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        tabla_frame = ctk.CTkFrame(vista)
+        tabla_frame.grid(row=2, column=0, sticky="nsew")
+        tabla_frame.grid_columnconfigure(0, weight=1)
+        tabla_frame.grid_rowconfigure(0, weight=1)
 
         cols_general = ['Canal'] + self.columnas_oficiales
+        self.tree_general = ttk.Treeview(tabla_frame, columns=cols_general, show='headings', height=18)
         
-        scroll_y = ttk.Scrollbar(frame_tabla, orient=tk.VERTICAL)
-        scroll_x = ttk.Scrollbar(frame_tabla, orient=tk.HORIZONTAL)
-
-        self.tree_general = ttk.Treeview(
-            frame_tabla, columns=cols_general, show='headings', height=12,
-            yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set
-        )
-        scroll_y.config(command=self.tree_general.yview)
-        scroll_x.config(command=self.tree_general.xview)
+        scroll_y = ttk.Scrollbar(tabla_frame, orient=tk.VERTICAL, command=self.tree_general.yview)
+        scroll_x = ttk.Scrollbar(tabla_frame, orient=tk.HORIZONTAL, command=self.tree_general.xview)
+        self.tree_general.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
 
         scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
         scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
@@ -393,25 +292,145 @@ class AppGrupoREV(tk.Tk):
             self.tree_general.heading(col, text=col)
             self.tree_general.column(col, width=120, anchor=tk.W)
 
-        self.tree_general.bind("<<TreeviewSelect>>", self.mostrar_detalle_general_seleccionado)
+    def crear_tarjeta_kpi(self, parent, titulo, valor_inicial, col):
+        card = ctk.CTkFrame(parent, fg_color=("#ffffff", "#1e293b"), corner_radius=8, border_width=1, border_color=("#cbd5e1", "#334155"))
+        card.grid(row=0, column=col, sticky="nsew", padx=5)
+        ctk.CTkLabel(card, text=titulo, font=ctk.CTkFont(family="Segoe UI", size=11), text_color="gray").pack(anchor="w", padx=15, pady=(10, 0))
+        lbl_v = ctk.CTkLabel(card, text=valor_inicial, font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"))
+        lbl_v.pack(anchor="w", padx=15, pady=(0, 10))
+        return lbl_v
 
-        self.frame_detalle = ttk.LabelFrame(self.tab_general, text=" 🔍 Visualización Detallada del Pedido Seleccionado y Acceso a Guía ")
-        self.frame_detalle.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        self.crear_panel_detalle_vacio()
+    def crear_vista_logistica(self):
+        vista = ctk.CTkFrame(self.container, fg_color="transparent")
+        vista.grid_columnconfigure(0, weight=1)
+        self.frames_vistas["logistica"] = vista
 
-    def crear_vista_canal_individual(self, tab_canal, canal):
-        frame_superior = ttk.Frame(tab_canal, padding=5)
-        frame_superior.pack(fill=tk.X, padx=10, pady=5)
+        frame_form = ctk.CTkScrollableFrame(vista, label_text=" Ingreso Logístico Exclusivo (Base de Datos) ")
+        frame_form.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        btn_exportar_excel = ttk.Button(frame_superior, text=f"📊 Exportar Bitácora [{canal}] a Excel", command=lambda c=canal: self.exportar_canal_a_excel(c))
-        btn_exportar_excel.pack(side=tk.LEFT, padx=5)
+        self.combo_canal_log = ctk.CTkComboBox(frame_form, values=self.canales, width=350, state="readonly")
+        self.agregar_campo_formulario(frame_form, "Canal / Bitácora:", self.combo_canal_log, 0)
+        self.entry_ov = ctk.CTkEntry(frame_form, width=350, placeholder_text="Ej. OV-9923")
+        self.agregar_campo_formulario(frame_form, "Orden de Venta (OV):", self.entry_ov, 1)
+        self.entry_pedido = ctk.CTkEntry(frame_form, width=350, placeholder_text="Ej. 54892")
+        self.agregar_campo_formulario(frame_form, "Números de pedido:", self.entry_pedido, 2)
+        self.entry_cliente = ctk.CTkEntry(frame_form, width=350, placeholder_text="Nombre del cliente")
+        self.agregar_campo_formulario(frame_form, "Nombre del cliente:", self.entry_cliente, 3)
+        self.entry_cajas = ctk.CTkEntry(frame_form, width=350, placeholder_text="0")
+        self.agregar_campo_formulario(frame_form, "Cajas:", self.entry_cajas, 4)
+        self.entry_bolsas = ctk.CTkEntry(frame_form, width=350, placeholder_text="0")
+        self.agregar_campo_formulario(frame_form, "Bolsas:", self.entry_bolsas, 5)
+        self.entry_log_f_envio = ctk.CTkEntry(frame_form, width=350, placeholder_text="AAAA-MM-DD")
+        self.agregar_campo_formulario(frame_form, "Fecha de Envío:", self.entry_log_f_envio, 6)
+        self.entry_log_f_entrega = ctk.CTkEntry(frame_form, width=350, placeholder_text="AAAA-MM-DD")
+        self.agregar_campo_formulario(frame_form, "Fecha de Entrega:", self.entry_log_f_entrega, 7)
+        self.entry_ubicacion = ctk.CTkEntry(frame_form, width=350, placeholder_text="Ciudad / Destino")
+        self.agregar_campo_formulario(frame_form, "Ubicación:", self.entry_ubicacion, 8)
+        self.entry_paqueteria = ctk.CTkEntry(frame_form, width=350, placeholder_text="Empresa de envío")
+        self.agregar_campo_formulario(frame_form, "Paquetería:", self.entry_paqueteria, 9)
+        self.entry_valor = ctk.CTkEntry(frame_form, width=350, placeholder_text="0.00")
+        self.agregar_campo_formulario(frame_form, "Valor ($MXN):", self.entry_valor, 10)
+        self.entry_num_guia = ctk.CTkEntry(frame_form, width=350, placeholder_text="Guía de transporte")
+        self.agregar_campo_formulario(frame_form, "Número de Guía:", self.entry_num_guia, 11)
 
-        frame_tabla = ttk.LabelFrame(tab_canal, text=f" Bitácora Oficial: {canal} ")
-        frame_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        ctk.CTkLabel(frame_form, text="Archivo de Guía (PDF):", font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")).grid(row=12, column=0, sticky="w", padx=25, pady=10)
+        frame_btn_g = ctk.CTkFrame(frame_form, fg_color="transparent")
+        frame_btn_g.grid(row=12, column=1, sticky="w", padx=20, pady=10)
+        ctk.CTkButton(frame_btn_g, text="📂 Seleccionar PDF", width=140, command=self.seleccionar_archivo_guia, fg_color="#334155").pack(side=tk.LEFT, padx=(0, 10))
+        self.lbl_ruta_guia = ctk.CTkLabel(frame_btn_g, text="Ningún archivo seleccionado.", text_color="gray", font=ctk.CTkFont(slant="italic"))
+        self.lbl_ruta_guia.pack(side=tk.LEFT)
 
-        tree = ttk.Treeview(frame_tabla, columns=self.columnas_oficiales, show='headings', height=14)
-        scroll_y = ttk.Scrollbar(frame_tabla, orient=tk.VERTICAL, command=tree.yview)
-        scroll_x = ttk.Scrollbar(frame_tabla, orient=tk.HORIZONTAL, command=tree.xview)
+        ctk.CTkButton(
+            frame_form, text="💾 Registrar en Base de Datos", font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            fg_color="#0284c7", hover_color="#0369a1", height=40, command=self.guardar_datos_logistica
+        ).grid(row=13, column=0, columnspan=2, pady=25)
+
+    def agregar_campo_formulario(self, parent, texto, widget, row):
+        ctk.CTkLabel(parent, text=texto, font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")).grid(row=row, column=0, sticky="w", padx=25, pady=8)
+        widget.grid(row=row, column=1, sticky="w", padx=20, pady=8)
+
+    def crear_vista_embarques(self):
+        vista = ctk.CTkFrame(self.container, fg_color="transparent")
+        vista.grid_columnconfigure(0, weight=1)
+        self.frames_vistas["embarques"] = vista
+
+        frame_form = ctk.CTkScrollableFrame(vista, label_text=" Validación de Embarques y Estatus ")
+        frame_form.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.combo_canal_emb = ctk.CTkComboBox(frame_form, values=self.canales, width=350, state="readonly")
+        self.agregar_campo_formulario(frame_form, "Canal de Destino:", self.combo_canal_emb, 0)
+        self.entry_emb_ov = ctk.CTkEntry(frame_form, width=350, placeholder_text="OV correspondiente")
+        self.agregar_campo_formulario(frame_form, "Orden de Venta (OV):", self.entry_emb_ov, 1)
+        self.entry_emb_pedido = ctk.CTkEntry(frame_form, width=350, placeholder_text="Número de pedido")
+        self.agregar_campo_formulario(frame_form, "Número de pedido:", self.entry_emb_pedido, 2)
+        self.entry_h_entrega = ctk.CTkEntry(frame_form, width=350, placeholder_text="HH:MM")
+        self.agregar_campo_formulario(frame_form, "Horario entrega:", self.entry_h_entrega, 3)
+        self.entry_quien_entrega = ctk.CTkEntry(frame_form, width=350, placeholder_text="Personal")
+        self.agregar_campo_formulario(frame_form, "Quien entrega:", self.entry_quien_entrega, 4)
+        self.entry_chofer = ctk.CTkEntry(frame_form, width=350, placeholder_text="Chofer")
+        self.agregar_campo_formulario(frame_form, "Chofer (Recibe):", self.entry_chofer, 5)
+        self.entry_f_salida = ctk.CTkEntry(frame_form, width=350, placeholder_text="AAAA-MM-DD")
+        self.agregar_campo_formulario(frame_form, "Fecha de salida:", self.entry_f_salida, 6)
+        self.entry_h_salida = ctk.CTkEntry(frame_form, width=350, placeholder_text="HH:MM")
+        self.agregar_campo_formulario(frame_form, "Hora de salida:", self.entry_h_salida, 7)
+        self.entry_dias_estancia = ctk.CTkEntry(frame_form, width=350, placeholder_text="0")
+        self.agregar_campo_formulario(frame_form, "Días de estancia:", self.entry_dias_estancia, 8)
+        self.combo_emb_estatus = ctk.CTkComboBox(frame_form, values=self.lista_estatus, width=350, state="readonly")
+        self.agregar_campo_formulario(frame_form, "Estatus del Pedido:", self.combo_emb_estatus, 9)
+
+        ctk.CTkButton(
+            frame_form, text="🚚 Actualizar Salida en Base de Datos", font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            fg_color="#1e293b", hover_color="#334155", height=40, command=self.guardar_datos_embarques
+        ).grid(row=10, column=0, columnspan=2, pady=25)
+
+    def crear_vista_notificaciones(self):
+        vista = ctk.CTkFrame(self.container, fg_color="transparent")
+        vista.grid_columnconfigure(0, weight=1)
+        vista.grid_rowconfigure(1, weight=1)
+        self.frames_vistas["notificaciones"] = vista
+
+        header = ctk.CTkFrame(vista, fg_color="transparent", height=40)
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        ctk.CTkButton(header, text="🔄 Actualizar", width=110, command=self.cargar_datos_bandeja, fg_color="#334155").pack(side=tk.LEFT, padx=5)
+        ctk.CTkButton(header, text="🗑️ Vaciar Historial", width=140, command=self.vaciar_bandeja_notificaciones, fg_color="#ef4444").pack(side=tk.RIGHT, padx=5)
+
+        tabla_frame = ctk.CTkFrame(vista)
+        tabla_frame.grid(row=1, column=0, sticky="nsew")
+        tabla_frame.grid_columnconfigure(0, weight=1)
+        tabla_frame.grid_rowconfigure(0, weight=1)
+
+        cols_noti = ['Fecha/Hora', 'Área / Origen', 'Título', 'Mensaje']
+        self.tree_notificaciones = ttk.Treeview(tabla_frame, columns=cols_noti, show='headings', height=20)
+        scroll_y = ttk.Scrollbar(tabla_frame, orient=tk.VERTICAL, command=self.tree_notificaciones.yview)
+        self.tree_notificaciones.configure(yscrollcommand=scroll_y.set)
+        scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree_notificaciones.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        anchos_noti = {'Fecha/Hora': 160, 'Área / Origen': 140, 'Título': 220, 'Mensaje': 600}
+        for col in cols_noti:
+            self.tree_notificaciones.heading(col, text=col)
+            self.tree_notificaciones.column(col, width=anchos_noti.get(col, 200), anchor=tk.W)
+        self.cargar_datos_bandeja()
+
+    def crear_vista_canal(self, canal):
+        vista = ctk.CTkFrame(self.container, fg_color="transparent")
+        vista.grid_columnconfigure(0, weight=1)
+        vista.grid_rowconfigure(1, weight=1)
+        self.frames_vistas[canal] = vista
+
+        header = ctk.CTkFrame(vista, fg_color="transparent", height=40)
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        ctk.CTkLabel(header, text=f"Bitácora Oficial: {canal}", font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold")).pack(side=tk.LEFT, padx=5)
+        ctk.CTkButton(header, text=f"📊 Exportar [{canal}] a Excel", width=160, command=lambda c=canal: self.exportar_canal_a_excel(c), fg_color="#0284c7").pack(side=tk.RIGHT, padx=5)
+
+        tabla_frame = ctk.CTkFrame(vista)
+        tabla_frame.grid(row=1, column=0, sticky="nsew")
+        tabla_frame.grid_columnconfigure(0, weight=1)
+        tabla_frame.grid_rowconfigure(0, weight=1)
+
+        tree = ttk.Treeview(tabla_frame, columns=self.columnas_oficiales, show='headings', height=20)
+        scroll_y = ttk.Scrollbar(tabla_frame, orient=tk.VERTICAL, command=tree.yview)
+        scroll_x = ttk.Scrollbar(tabla_frame, orient=tk.HORIZONTAL, command=tree.xview)
         tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
 
         scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
@@ -422,64 +441,50 @@ class AppGrupoREV(tk.Tk):
             tree.heading(col, text=col)
             tree.column(col, width=130, anchor=tk.W)
 
-        tree.bind("<<TreeviewSelect>>", self.mostrar_detalle_canal_seleccionado)
-        self.trees_canales[canal] = tree
+        setattr(self, f"tree_{canal}", tree)
 
-    def crear_formulario_logistica(self):
-        frame = ttk.LabelFrame(self.tab_logistica, text=" Ingreso Logístico Exclusivo (Lista de Empaque Oficial, Fechas y Guía) ")
-        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=15)
+    def registrar_y_mostrar_notificacion(self, tipo_origen, titulo, mensaje):
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO notificaciones (fecha_hora, area_origen, titulo, mensaje) VALUES (?, ?, ?, ?)",
+                           (timestamp, tipo_origen, titulo, mensaje))
+            conn.commit()
+            conn.close()
+            VentanaToast(self, titulo, mensaje)
+            self.cargar_datos_bandeja()
+        except Exception as e:
+            print("Error notificación BD:", e)
 
-        lbl_canal = ttk.Label(frame, text="Canal / Bitácora de Destino:", font=("Segoe UI", 9, "bold"))
-        lbl_canal.grid(row=0, column=0, sticky=tk.W, padx=20, pady=8)
-        self.combo_canal_log = ttk.Combobox(frame, values=self.canales, state="readonly", width=46, font=("Segoe UI", 9))
-        self.combo_canal_log.grid(row=0, column=1, sticky=tk.W, padx=20, pady=8)
-        self.combo_canal_log.set(self.canales[0])
+    def cargar_datos_bandeja(self):
+        if not hasattr(self, 'tree_notificaciones'): return
+        for row in self.tree_notificaciones.get_children(): self.tree_notificaciones.delete(row)
+        try:
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            cursor.execute("SELECT fecha_hora, area_origen, titulo, mensaje FROM notificaciones ORDER BY id DESC")
+            rows = cursor.fetchall()
+            conn.close()
+            for row in rows:
+                self.tree_notificaciones.insert("", tk.END, values=row)
+        except Exception as e:
+            print("Error cargando bandeja BD:", e)
 
-        campos = [
-            ("Orden de Venta (OV):", "entry_ov"),
-            ("Números de pedido:", "entry_pedido"),
-            ("Nombre del cliente:", "entry_cliente"),
-            ("Cajas:", "entry_cajas"),
-            ("Bolsas:", "entry_bolsas"),
-            ("Fecha de Envío (AAAA-MM-DD):", "entry_log_f_envio"),
-            ("Fecha de Entrega (AAAA-MM-DD) [Logística]:", "entry_log_f_entrega"),
-            ("Ubicación:", "entry_ubicacion"),
-            ("Nombre de la paquetería:", "entry_paqueteria"),
-            ("Valor ($MXN):", "entry_valor"),
-            ("Número de Guía:", "entry_num_guia")
-        ]
-
-        for i, (label_text, attr_name) in enumerate(campos, start=1):
-            lbl = ttk.Label(frame, text=label_text, font=("Segoe UI", 9, "bold"))
-            lbl.grid(row=i, column=0, sticky=tk.W, padx=20, pady=5)
-            ent = ttk.Entry(frame, width=48, font=("Segoe UI", 9))
-            ent.grid(row=i, column=1, sticky=tk.W, padx=20, pady=5)
-            setattr(self, attr_name, ent)
-
-        row_idx = len(campos) + 1
-        lbl_guia = ttk.Label(frame, text="Adjuntar Archivo de Guía (PDF):", font=("Segoe UI", 9, "bold"))
-        lbl_guia.grid(row=row_idx, column=0, sticky=tk.W, padx=20, pady=8)
-        
-        frame_archivo = ttk.Frame(frame)
-        frame_archivo.grid(row=row_idx, column=1, sticky=tk.W, padx=20, pady=8)
-
-        btn_explorar_guia = ttk.Button(frame_archivo, text="📂 Examinar Guía PDF", command=self.seleccionar_archivo_guia)
-        btn_explorar_guia.pack(side=tk.LEFT, padx=5)
-
-        self.lbl_ruta_guia = ttk.Label(frame_archivo, text="Ningún archivo seleccionado.", font=("Segoe UI", 9, "italic"), foreground="gray")
-        self.lbl_ruta_guia.pack(side=tk.LEFT, padx=5)
-
-        btn_guardar = ttk.Button(frame, text="💾 Registrar en Maestro Logístico del Canal", command=self.guardar_datos_logistica)
-        btn_guardar.grid(row=row_idx+1, column=0, columnspan=2, pady=15)
+    def vaciar_bandeja_notificaciones(self):
+        if messagebox.askyesno("Confirmar", "¿Seguro deseas vaciar todo el historial de notificaciones?"):
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM notificaciones")
+            conn.commit()
+            conn.close()
+            self.cargar_datos_bandeja()
 
     def seleccionar_archivo_guia(self):
-        archivo = filedialog.askopenfilename(
-            title="Seleccionar archivo PDF de guía por logística",
-            filetypes=[("Archivos PDF", "*.pdf"), ("Todos los archivos", "*.*")]
-        )
+        archivo = filedialog.askopenfilename(title="Seleccionar Guía PDF", filetypes=[("Archivos PDF", "*.pdf")])
         if archivo:
             self.archivo_guia_temp = archivo
-            self.lbl_ruta_guia.config(text=os.path.basename(archivo), foreground="black")
+            self.lbl_ruta_guia.configure(text=os.path.basename(archivo), text_color="green")
 
     def guardar_datos_logistica(self):
         try:
@@ -497,150 +502,56 @@ class AppGrupoREV(tk.Tk):
             num_guia = self.entry_num_guia.get().strip()
 
             if not ov or not cliente or not pedido or not canal:
-                messagebox.showerror("Error", "Faltan datos obligatorios (Canal, OV, Pedido, Cliente).")
-                return
-
-            resumen = (
-                f"¿Seguro quieres registrar/capturar los datos?\n\n"
-                f"• Canal: {canal}\n"
-                f"• OV: {ov}\n"
-                f"• Pedido: {pedido}\n"
-                f"• Cliente: {cliente}\n"
-                f"• Fecha de Envío: {f_envio if f_envio else '(Vacía)'}\n"
-                f"• Fecha de Entrega: {f_entrega if f_entrega else '(Vacía)'}\n"
-                f"• Paquetería: {paqueteria if paqueteria else '(Vacía)'}"
-            )
-            
-            confirmar = messagebox.askyesno("Confirmación de Captura", resumen)
-            if not confirmar:
+                messagebox.showerror("Error", "Faltan datos obligatorios.")
                 return
 
             archivo_guia_nombre = "Sin archivo"
             if self.archivo_guia_temp and os.path.exists(self.archivo_guia_temp):
-                nombre_base = os.path.basename(self.archivo_guia_temp)
-                archivo_guia_nombre = nombre_base
-                destino_guia = os.path.join(self.carpeta_guias, archivo_guia_nombre)
-                shutil.copy(self.archivo_guia_temp, destino_guia)
+                archivo_guia_nombre = os.path.basename(self.archivo_guia_temp)
+                shutil.copy(self.archivo_guia_temp, os.path.join(self.carpeta_guias, archivo_guia_nombre))
 
-            ruta_csv_canal = self.obtener_ruta_csv(canal)
-            if os.path.exists(ruta_csv_canal):
-                df = pd.read_csv(ruta_csv_canal, dtype=str)
-                for col in self.columnas_oficiales:
-                    if col not in df.columns:
-                        df[col] = ""
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            tabla = f"canal_{canal.lower()}"
+
+            cursor.execute(f"SELECT OV FROM {tabla} WHERE OV = ?", (ov,))
+            existe = cursor.fetchone()
+
+            if existe:
+                cursor.execute(f"""
+                    UPDATE {tabla} SET 
+                        Numero_de_pedido = ?, Nombre_del_cliente = ?, Cajas = ?, Bolsas = ?,
+                        fecha_de_envio = ?, fecha_de_entrega = ?, ubicacion = ?, nombre_de_la_paqueteria = ?,
+                        valor_MXN = ?, Numero_de_guia = ?, Archivo_guia = ?
+                    WHERE OV = ?
+                """, (pedido, cliente, cajas, bolsas, f_envio, f_entrega, ubicacion, paqueteria, valor, num_guia, archivo_guia_nombre, ov))
             else:
-                df = pd.DataFrame(columns=self.columnas_oficiales)
+                cursor.execute(f"""
+                    INSERT INTO {tabla} (
+                        OV, Numero_de_pedido, Nombre_del_cliente, Cajas, Bolsas, fecha_de_envio,
+                        fecha_de_entrega, ubicacion, nombre_de_la_paqueteria, valor_MXN, Estatus, Numero_de_guia, Archivo_guia
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'En espera', ?, ?)
+                """, (ov, pedido, cliente, cajas, bolsas, f_envio, f_entrega, ubicacion, paqueteria, valor, num_guia, archivo_guia_nombre))
 
-            df = df[df['OV'].astype(str).str.lower() != 'nan']
+            conn.commit()
+            conn.close()
 
-            if not df.empty and 'OV' in df.columns and ov in df['OV'].astype(str).values:
-                df.loc[df['OV'].astype(str) == ov, 'Numero de pedido'] = pedido
-                df.loc[df['OV'].astype(str) == ov, 'Nombre del cliente'] = cliente
-                df.loc[df['OV'].astype(str) == ov, 'Cajas'] = cajas
-                df.loc[df['OV'].astype(str) == ov, 'Bolsas'] = bolsas
-                if f_envio:
-                    df.loc[df['OV'].astype(str) == ov, 'fecha de envio'] = f_envio
-                if f_entrega:
-                    df.loc[df['OV'].astype(str) == ov, 'fecha de entrega'] = f_entrega
-                df.loc[df['OV'].astype(str) == ov, 'ubicacion'] = ubicacion
-                df.loc[df['OV'].astype(str) == ov, 'nombre de la paqueteria'] = paqueteria
-                df.loc[df['OV'].astype(str) == ov, 'valor ($MXN)'] = valor
-                df.loc[df['OV'].astype(str) == ov, 'Numero de guia'] = num_guia
-                if 'Estatus' not in df.columns or not df.loc[df['OV'].astype(str) == ov, 'Estatus'].values[0]:
-                    df.loc[df['OV'].astype(str) == ov, 'Estatus'] = 'En espera'
-                if self.archivo_guia_temp:
-                    df.loc[df['OV'].astype(str) == ov, 'Archivo guia'] = archivo_guia_nombre
-            else:
-                nueva_fila = {col: "" for col in self.columnas_oficiales}
-                nueva_fila.update({
-                    'OV': ov,
-                    'Numero de pedido': pedido,
-                    'Nombre del cliente': cliente,
-                    'Cajas': cajas,
-                    'Bolsas': bolsas,
-                    'fecha de envio': f_envio,
-                    'fecha de entrega': f_entrega,
-                    'ubicacion': ubicacion,
-                    'nombre de la paqueteria': paqueteria,
-                    'valor ($MXN)': valor,
-                    'Estatus': 'En espera',
-                    'Numero de guia': num_guia,
-                    'Archivo guia': archivo_guia_nombre
-                })
-                df = pd.concat([df, pd.DataFrame([nueva_fila])], ignore_index=True)
-
-            df.to_csv(ruta_csv_canal, index=False, encoding='utf-8-sig')
+            self.registrar_y_mostrar_notificacion("Área de Logística", "Nueva Captura", f"Canal [{canal}] registró OV: {ov}")
+            messagebox.showinfo("Éxito", f"OV {ov} registrada exitosamente en Base de Datos.")
             
-            # Registrar en bandeja y lanzar toast
-            self.registrar_y_mostrar_notificacion(
-                "Área de Logística",
-                "Nueva Captura Logística",
-                f"Canal [{canal}] registró la OV: {ov} | Cliente: {cliente} (Pendiente de embarcar)"
-            )
-
-            messagebox.showinfo("Éxito", f"OV {ov} registrada exitosamente en logística para el canal [{canal}].")
-            
-            for ent in [self.entry_ov, self.entry_pedido, self.entry_cliente, self.entry_cajas, self.entry_bolsas, self.entry_log_f_envio, self.entry_log_f_entrega, self.entry_ubicacion, self.entry_paqueteria, self.entry_valor, self.entry_num_guia]:
-                ent.delete(0, tk.END)
+            self.entry_ov.delete(0, tk.END)
+            self.entry_pedido.delete(0, tk.END)
+            self.entry_cliente.delete(0, tk.END)
             self.archivo_guia_temp = ""
-            self.lbl_ruta_guia.config(text="Ningún archivo seleccionado.", foreground="gray")
-            
+            self.lbl_ruta_guia.configure(text="Ningún archivo seleccionado.", text_color="gray")
             self.cargar_datos_todos_canales()
-
         except Exception as e:
-            messagebox.showerror("Error", f"No se pudo guardar: {str(e)}")
-
-    def crear_formulario_embarques(self):
-        frame = ttk.LabelFrame(self.tab_embarques, text=" Validación Cruzada de Embarques, Salidas y Actualización de Estatus ")
-        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-
-        lbl_canal = ttk.Label(frame, text="Canal / Bitácora a Embarcar:", font=("Segoe UI", 9, "bold"))
-        lbl_canal.grid(row=0, column=0, sticky=tk.W, padx=20, pady=8)
-        self.combo_canal_emb = ttk.Combobox(frame, values=self.canales, state="readonly", width=38, font=("Segoe UI", 9))
-        self.combo_canal_emb.grid(row=0, column=1, sticky=tk.W, padx=20, pady=8)
-        self.combo_canal_emb.set(self.canales[0])
-
-        lbl_ov_sel = ttk.Label(frame, text="Orden de Venta (OV):", font=("Segoe UI", 9, "bold"))
-        lbl_ov_sel.grid(row=1, column=0, sticky=tk.W, padx=20, pady=8)
-        self.entry_emb_ov = ttk.Entry(frame, width=40, font=("Segoe UI", 9))
-        self.entry_emb_ov.grid(row=1, column=1, sticky=tk.W, padx=20, pady=8)
-
-        lbl_ped_val = ttk.Label(frame, text="Número de pedido:", font=("Segoe UI", 9, "bold"))
-        lbl_ped_val.grid(row=2, column=0, sticky=tk.W, padx=20, pady=8)
-        self.entry_emb_pedido = ttk.Entry(frame, width=40, font=("Segoe UI", 9))
-        self.entry_emb_pedido.grid(row=2, column=1, sticky=tk.W, padx=20, pady=8)
-
-        campos_emb = [
-            ("Horario de entrega:", "entry_h_entrega"),
-            ("Nombre de quien entrega:", "entry_quien_entrega"),
-            ("Nombre del chofer (Recibe):", "entry_chofer"),
-            ("Fecha de salida:", "entry_f_salida"),
-            ("Hora de salida:", "entry_h_salida"),
-            ("Días de estancia:", "entry_dias_estancia")
-        ]
-
-        for i, (label_text, attr_name) in enumerate(campos_emb, start=3):
-            lbl = ttk.Label(frame, text=label_text, font=("Segoe UI", 9, "bold"))
-            lbl.grid(row=i, column=0, sticky=tk.W, padx=20, pady=6)
-            ent = ttk.Entry(frame, width=40, font=("Segoe UI", 9))
-            ent.grid(row=i, column=1, sticky=tk.W, padx=20, pady=6)
-            setattr(self, attr_name, ent)
-
-        row_est = len(campos_emb) + 3
-        lbl_estatus = ttk.Label(frame, text="Actualizar Estatus del Pedido:", font=("Segoe UI", 9, "bold"))
-        lbl_estatus.grid(row=row_est, column=0, sticky=tk.W, padx=20, pady=8)
-        self.combo_emb_estatus = ttk.Combobox(frame, values=self.lista_estatus, state="readonly", width=38, font=("Segoe UI", 9))
-        self.combo_emb_estatus.grid(row=row_est, column=1, sticky=tk.W, padx=20, pady=8)
-        self.combo_emb_estatus.set("En camino")
-
-        btn_guardar_emb = ttk.Button(frame, text="🚚 Validar, Actualizar Estatus y Salida en Embarques", command=self.guardar_datos_embarques)
-        btn_guardar_emb.grid(row=row_est+1, column=0, columnspan=2, pady=20)
+            messagebox.showerror("Error", str(e))
 
     def guardar_datos_embarques(self):
         try:
             canal = self.combo_canal_emb.get().strip()
-            ov_embarques = self.entry_emb_ov.get().strip()
-            pedido_embarques = self.entry_emb_pedido.get().strip()
+            ov = self.entry_emb_ov.get().strip()
             h_entrega = self.entry_h_entrega.get().strip()
             q_entrega = self.entry_quien_entrega.get().strip()
             chofer = self.entry_chofer.get().strip()
@@ -649,257 +560,155 @@ class AppGrupoREV(tk.Tk):
             dias = self.entry_dias_estancia.get().strip()
             nuevo_estatus = self.combo_emb_estatus.get().strip()
 
-            if not ov_embarques or not pedido_embarques or not canal:
-                messagebox.showerror("Error", "Debes especificar canal, OV y número de pedido.")
+            if not ov or not canal:
+                messagebox.showerror("Error", "Faltan campos obligatorios.")
                 return
 
-            ruta_csv_canal = self.obtener_ruta_csv(canal)
-            if os.path.exists(ruta_csv_canal):
-                df = pd.read_csv(ruta_csv_canal, dtype=str)
-            else:
-                messagebox.showerror("Error", f"No existe base de datos logística para el canal [{canal}].")
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            tabla = f"canal_{canal.lower()}"
+
+            cursor.execute(f"SELECT OV FROM {tabla} WHERE OV = ?", (ov,))
+            if not cursor.fetchone():
+                conn.close()
+                messagebox.showerror("Error", f"La OV {ov} no existe en logística de [{canal}].")
                 return
 
-            df = df[df['OV'].astype(str).str.lower() != 'nan']
+            cursor.execute(f"""
+                UPDATE {tabla} SET 
+                    horario_entrega = ?, nombre_de_quien_entrega = ?, nombre_de_quien_recibe_chofer = ?,
+                    fecha_de_salida = ?, hora_de_salida = ?, dias_de_estancia = ?, Estatus = ?
+                WHERE OV = ?
+            """, (h_entrega, q_entrega, chofer, f_salida, h_salida, dias, nuevo_estatus, ov))
 
-            match_log = df[df['OV'].astype(str) == ov_embarques]
-            if match_log.empty:
-                self.registrar_error(f"Embarques - {canal}", ov_embarques, f"Intento de embarcar OV inexistente en canal {canal} con datos: {pedido_embarques}.")
-                messagebox.showerror("Error Crítico", f"La OV {ov_embarques} NO existe en la bitácora del canal [{canal}].")
-                return
+            conn.commit()
+            conn.close()
 
-            fila_log = match_log.iloc[0]
-            pedido_logistica = str(fila_log.get('Numero de pedido', ''))
-            pedidos_log_lista = [p.strip() for p in pedido_logistica.split(',')]
-
-            if pedido_embarques not in pedidos_log_lista:
-                desc_error = f"Discrepancia en canal {canal} (OV {ov_embarques}). Logística tenía [{pedido_logistica}] pero Embarques intentó registrar [{pedido_embarques}]."
-                self.registrar_error(f"Ventas / Embarques - {canal}", ov_embarques, desc_error)
-                messagebox.showwarning("⚠️ Discrepancia Registrada", f"El pedido ingresado ({pedido_embarques}) no coincide con logística en [{canal}]. Se registró la incidencia.")
-
-            df.loc[df['OV'].astype(str) == ov_embarques, 'horario entrega'] = h_entrega
-            df.loc[df['OV'].astype(str) == ov_embarques, 'nombre de quien entrega'] = q_entrega
-            df.loc[df['OV'].astype(str) == ov_embarques, 'nombre de quien recibe (chofer)'] = chofer
-            df.loc[df['OV'].astype(str) == ov_embarques, 'fecha de salida'] = f_salida
-            df.loc[df['OV'].astype(str) == ov_embarques, 'hora de salida'] = h_salida
-            df.loc[df['OV'].astype(str) == ov_embarques, 'dias de estancia'] = dias
-            df.loc[df['OV'].astype(str) == ov_embarques, 'Estatus'] = nuevo_estatus
-
-            df.to_csv(ruta_csv_canal, index=False, encoding='utf-8-sig')
-            
-            self.registrar_y_mostrar_notificacion(
-                "Área de Embarques",
-                "Actualización de Embarques",
-                f"Canal [{canal}] - OV: {ov_embarques} | Nuevo estatus: [{nuevo_estatus}]"
-            )
-
-            messagebox.showinfo("Éxito", f"Embarque y estatus [{nuevo_estatus}] actualizados correctamente para la OV {ov_embarques} en [{canal}].")
-            
+            self.registrar_y_mostrar_notificacion("Área de Embarques", "Embarque Actualizado", f"Canal [{canal}] - OV: {ov} -> {nuevo_estatus}")
+            messagebox.showinfo("Éxito", f"Estatus actualizado a [{nuevo_estatus}].")
             self.entry_emb_ov.delete(0, tk.END)
-            self.entry_emb_pedido.delete(0, tk.END)
-            for ent in [self.entry_h_entrega, self.entry_quien_entrega, self.entry_chofer, self.entry_f_salida, self.entry_h_salida, self.entry_dias_estancia]:
-                ent.delete(0, tk.END)
-
             self.cargar_datos_todos_canales()
-
         except Exception as e:
-            messagebox.showerror("Error", f"No se pudo procesar embarques: {str(e)}")
-
-    def registrar_error(self, origen, ov, descripcion):
-        try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            ruta_errores = os.path.join(self.carpeta_datos, "historial_errores.csv")
-            nuevo = pd.DataFrame([{'Fecha/Hora': timestamp, 'Origen': origen, 'OV': ov, 'Descripción': descripcion}])
-            if os.path.exists(ruta_errores):
-                df_err = pd.read_csv(ruta_errores, dtype=str)
-                df_err = pd.concat([df_err, nuevo], ignore_index=True)
-            else:
-                df_err = nuevo
-            df_err.to_csv(ruta_errores, index=False, encoding='utf-8-sig')
-        except Exception as e:
-            print("Error al registrar auditoría de error:", e)
+            messagebox.showerror("Error", str(e))
 
     def abrir_ventana_errores(self):
-        top = tk.Toplevel(self)
-        top.title("Grupo REV | Auditoría de Historial de Errores y Discrepancias")
+        top = ctk.CTkToplevel(self)
+        top.title("Grupo REV | Auditoría de Errores")
         top.geometry("900x450")
-        
-        frame = ttk.LabelFrame(top, text=" Registro Histórico de Discrepancias e Incidencias ")
+        frame = ctk.CTkFrame(top)
         frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-
+        
         cols = ['Fecha/Hora', 'Origen', 'OV', 'Descripción']
-        tree = ttk.Treeview(frame, columns=cols, show='headings', height=15)
-        for c in cols:
-            tree.heading(c, text=c)
-            tree.column(c, width=180 if c != 'Descripción' else 320, anchor=tk.W)
+        tree = ttk.Treeview(frame, columns=cols, show='headings', height=16)
+        for c in cols: tree.heading(c, text=c)
         
         scroll = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=tree.yview)
         tree.configure(yscrollcommand=scroll.set)
         scroll.pack(side=tk.RIGHT, fill=tk.Y)
         tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        ruta_errores = os.path.join(self.carpeta_datos, "historial_errores.csv")
         try:
-            if os.path.exists(ruta_errores):
-                df_err = pd.read_csv(ruta_errores, dtype=str)
-                for _, row in df_err.iterrows():
-                    tree.insert("", tk.END, values=[row.get('Fecha/Hora',''), row.get('Origen',''), row.get('OV',''), row.get('Descripción','')])
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            cursor.execute("SELECT fecha_hora, origen, ov, descripcion FROM errores ORDER BY id DESC")
+            rows = cursor.fetchall()
+            conn.close()
+            for r in rows:
+                tree.insert("", tk.END, values=r)
         except Exception as e:
-            print("Error cargando errores:", e)
+            print("Error cargando errores BD:", e)
 
     def cargar_datos_todos_canales(self):
         try:
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            
             lista_dfs = []
+            total_pedidos, espera, camino, entregados = 0, 0, 0, 0
+
             for canal in self.canales:
-                ruta = self.obtener_ruta_csv(canal)
-                if os.path.exists(ruta):
-                    df = pd.read_csv(ruta, dtype=str)
-                    df = df[df['OV'].astype(str).str.lower() != 'nan']
+                tabla = f"canal_{canal.lower()}"
+                cursor.execute(f"SELECT * FROM {tabla}")
+                rows = cursor.fetchall()
+                cols = [desc[0] for desc in cursor.description]
+                
+                if rows:
+                    df = pd.DataFrame(rows, columns=cols)
+                    # Normalizamos columnas para el frontend
+                    df.columns = self.columnas_oficiales
                     df.insert(0, 'Canal', canal)
                     lista_dfs.append(df)
                     
-                    if canal in self.trees_canales:
-                        tree_c = self.trees_canales[canal]
-                        for row in tree_c.get_children():
-                            tree_c.delete(row)
+                    total_pedidos += len(df)
+                    if 'Estatus' in df.columns:
+                        espera += len(df[df['Estatus'].str.strip() == 'En espera'])
+                        camino += len(df[df['Estatus'].str.strip() == 'En camino'])
+                        entregados += len(df[df['Estatus'].str.strip() == 'Entregado'])
+
+                    tree_c = getattr(self, f"tree_{canal}", None)
+                    if tree_c:
+                        for row in tree_c.get_children(): tree_c.delete(row)
                         for _, row in df.iterrows():
-                            vals = [row.get(col, '') for col in self.columnas_oficiales]
-                            tree_c.insert("", tk.END, values=vals)
+                            tree_c.insert("", tk.END, values=[row.get(col, '') for col in self.columnas_oficiales])
 
-            for row in self.tree_general.get_children():
-                self.tree_general.delete(row)
-
+            for row in self.tree_general.get_children(): self.tree_general.delete(row)
             if lista_dfs:
                 df_global = pd.concat(lista_dfs, ignore_index=True)
                 for _, row in df_global.iterrows():
-                    vals = [row.get('Canal', '')] + [row.get(col, '') for col in self.columnas_oficiales]
-                    self.tree_general.insert("", tk.END, values=vals)
+                    self.tree_general.insert("", tk.END, values=[row.get('Canal', '')] + [row.get(col, '') for col in self.columnas_oficiales])
 
-            self.actualizar_contadores_pendientes()
+            self.kpi_total.configure(text=str(total_pedidos))
+            self.kpi_espera.configure(text=str(espera))
+            self.kpi_camino.configure(text=str(camino))
+            self.kpi_entregados.configure(text=str(entregados))
+            conn.close()
         except Exception as e:
-            print("Error al cargar datos consolidados:", e)
-
-    def crear_panel_detalle_vacio(self):
-        for widget in self.frame_detalle.winfo_children():
-            widget.destroy()
-        lbl = ttk.Label(self.frame_detalle, text="Seleccione un pedido de la tabla superior para ver su información detallada y abrir archivos adjuntos.", font=("Segoe UI", 9, "italic"))
-        lbl.pack(padx=15, pady=15)
-
-    def mostrar_detalle_general_seleccionado(self, event):
-        seleccion = self.tree_general.selection()
-        if not seleccion:
-            return
-        item = self.tree_general.item(seleccion)
-        valores = item['values']
-        if not valores:
-            return
-        
-        canal = valores[0]
-        ov = valores[1]
-        self.renderizar_panel_detalle(canal, ov)
-
-    def mostrar_detalle_canal_seleccionado(self, event):
-        # Identificar qué árbol de canal disparó el evento
-        for canal, tree in self.trees_canales.items():
-            seleccion = tree.selection()
-            if seleccion:
-                item = tree.item(seleccion)
-                valores = item['values']
-                if valores:
-                    ov = valores[0]
-                    self.renderizar_panel_detalle(canal, ov)
-                break
-
-    def actualizar_panel_detalle_activo(self):
-        # Opcional al cambiar de pestaña
-        pass
-
-    def renderizar_panel_detalle(self, canal, ov):
-        for widget in self.frame_detalle.winfo_children():
-            widget.destroy()
-
-        ruta_csv = self.obtener_ruta_csv(canal)
-        if not os.path.exists(ruta_csv):
-            return
-        
-        df = pd.read_csv(ruta_csv, dtype=str)
-        match = df[df['OV'].astype(str) == str(ov)]
-        if match.empty:
-            return
-
-        row = match.iloc[0]
-
-        # Contenedor interior dividido en dos columnas (Información y Acciones)
-        frame_content = ttk.Frame(self.frame_detalle, padding=10)
-        frame_content.pack(fill=tk.BOTH, expand=True)
-
-        info_texto = (
-            f"Canal: {canal}   |   Orden de Venta (OV): {row.get('OV', '')}   |   Pedido: {row.get('Numero de pedido', '')}\n"
-            f"Cliente: {row.get('Nombre del cliente', '')}   |   Estatus Actual: {row.get('Estatus', '')}\n"
-            f"Paquetería: {row.get('nombre de la paqueteria', '')}   |   Guía: {row.get('Numero de guia', '')}"
-        )
-
-        lbl_info = ttk.Label(frame_content, text=info_texto, font=("Segoe UI", 9), justify=tk.LEFT)
-        lbl_info.pack(side=tk.LEFT, padx=10, fill=tk.BOTH, expand=True)
-
-        archivo_guia = row.get('Archivo guia', '')
-        if archivo_guia and archivo_guia != 'Sin archivo':
-            btn_abrir = ttk.Button(frame_content, text="📂 Abrir Guía PDF Adjunta", command=lambda: self.abrir_guia_pdf(archivo_guia))
-            btn_abrir.pack(side=tk.RIGHT, padx=10)
-        else:
-            lbl_no_guia = ttk.Label(frame_content, text="📄 Sin guía PDF adjunta", font=("Segoe UI", 9, "italic"), foreground="gray")
-            lbl_no_guia.pack(side=tk.RIGHT, padx=10)
-
-    def abrir_guia_pdf(self, nombre_archivo):
-        ruta_completa = os.path.join(self.carpeta_guias, nombre_archivo)
-        if os.path.exists(ruta_completa):
-            try:
-                if platform.system() == 'Windows':
-                    os.startfile(ruta_completa)
-                elif platform.system() == 'Darwin':
-                    subprocess.run(['open', ruta_completa])
-                else:
-                    subprocess.run(['xdg-open', ruta_completa])
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo abrir el archivo PDF: {str(e)}")
-        else:
-            messagebox.showerror("Error", f"El archivo de guía no se encuentra en la ruta:\n{ruta_completa}")
+            print("Error cargando canales BD:", e)
 
     def exportar_general_a_excel(self):
         try:
-            archivo = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Archivos de Excel", "*.xlsx")], title="Guardar Consolidado General")
-            if not archivo:
-                return
+            archivo = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel", "*.xlsx")])
+            if not archivo: return
+            
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
             lista_dfs = []
             for canal in self.canales:
-                ruta = self.obtener_ruta_csv(canal)
-                if os.path.exists(ruta):
-                    df = pd.read_csv(ruta, dtype=str)
+                cursor.execute(f"SELECT * FROM canal_{canal.lower()}")
+                rows = cursor.fetchall()
+                if rows:
+                    cols = [desc[0] for desc in cursor.description]
+                    df = pd.DataFrame(rows, columns=cols)
+                    df.columns = self.columnas_oficiales
                     df.insert(0, 'Canal', canal)
                     lista_dfs.append(df)
-            if lista_dfs:
-                df_total = pd.concat(lista_dfs, ignore_index=True)
-                df_total.to_excel(archivo, index=False)
-                messagebox.showinfo("Éxito", "Consolidado general exportado exitosamente a Excel.")
-            else:
-                messagebox.showwarning("Aviso", "No hay datos para exportar.")
+            conn.close()
+
+            if lista_dfs: 
+                pd.concat(lista_dfs, ignore_index=True).to_excel(archivo, index=False)
+                messagebox.showinfo("Éxito", "Consolidado exportado correctamente a Excel.")
         except Exception as e:
-            messagebox.showerror("Error", f"No se pudo exportar: {str(e)}")
+            messagebox.showerror("Error", str(e))
 
     def exportar_canal_a_excel(self, canal):
         try:
-            ruta = self.obtener_ruta_csv(canal)
-            if not os.path.exists(ruta):
-                messagebox.showwarning("Aviso", f"No hay datos para el canal [{canal}].")
-                return
-            archivo = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Archivos de Excel", "*.xlsx")], title=f"Guardar Bitácora {canal}")
-            if not archivo:
-                return
-            df = pd.read_csv(ruta, dtype=str)
-            df.to_excel(archivo, index=False)
-            messagebox.showinfo("Éxito", f"Bitácora del canal [{canal}] exportada exitosamente a Excel.")
+            archivo = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel", "*.xlsx")])
+            if not archivo: return
+            
+            conn = self.obtener_conexion()
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM canal_{canal.lower()}")
+            rows = cursor.fetchall()
+            cols = [desc[0] for desc in cursor.description]
+            conn.close()
+
+            if rows:
+                df = pd.DataFrame(rows, columns=cols)
+                df.columns = self.columnas_oficiales
+                df.to_excel(archivo, index=False)
+                messagebox.showinfo("Éxito", f"Bitácora {canal} exportada.")
         except Exception as e:
-            messagebox.showerror("Error", f"No se pudo exportar: {str(e)}")
+            messagebox.showerror("Error", str(e))
 
 if __name__ == "__main__":
     app = AppGrupoREV()
