@@ -1,57 +1,57 @@
-# Cross-Functional Logistics and Shipping Management System
+Logistics Order & Shipment Microservice API
+Backend service developed with FastAPI and SQLite designed for the ingestion, validation, and end-to-end traceability of Sales Orders (OV - Órdenes de Venta) and shipping processes.
 
-## 🚀 Overview
-A data-driven logistics operations and shipping management system developed in Python. Designed to automate and streamline order fulfillment, tracking, data validation, and documentation processes across cross-functional supply chain environments.
+This project simulates a core component of an Enterprise Resource Planning (ERP) or Warehouse Management System (WMS), enforcing strict data integrity rules, audit trails, and automated testing protocols.
 
----
+🚀 Key Features
+Master Key Validation (OV): Uses Sales Order numbers as unique primary identifiers to prevent conflicting records.
 
-## 📊 Sample Data: Maestro de Embarques (Cleaned Data)
-A snippet of the structured operational dataset stored in `data/maestro_embarques_dummy.csv`, handling transactional tracking, carrier assignment, and financial values:
+Idempotency & Business Logic Guardrails: Validates against duplicate insertions (HTTP 400) to maintain inventory and order accuracy.
 
-| OV | Número de Pedido | Cliente | Cajas | Bolsas | Fecha de Salida | Ubicación | Paquetería | Valor (MXN) | Estancia (Días) | Guía |
-| :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- | :---: | :---: | :--- |
-| 2003268.0 | PEGE2026-498-2003268 | Cliente A | 12.0 | 2.0 | 2026-07-26 | Puebla | DHL | $15,000.50 | 1.0 | GUIA-DHL-88901 |
-| 2003269.0 | PEGE2026-499-2003269 | Cliente B | 8.0 | 1.0 | 2026-07-26 | CDMX | FedEx | $8,400.00 | 2.0 | GUIA-FDX-44210 |
-| 2003270.0 | PEGE2026-500-2003270 | Cliente C | 15.0 | 4.0 | 2026-07-27 | Monterrey | Estafeta | $22,100.00 | 0.0 | GUIA-EST-11293 |
+Automated Audit Logging: Every transactional event (CREATE_EMBARQUE) automatically generates an immutable audit log with timestamps for compliance and process tracking.
 
----
+Robust Test Coverage: Fully tested suite using pytest and FastTestClient, covering positive assertions, boundary conditions (duplicates), and error handling (HTTP 201, 400, 404, 500).
 
-## 📈 Automated Analytics & KPI Report
-Running the built-in analytics engine (`core/analitica_embarques.py`) processes the master dataset to output real-time supply chain metrics:
-
-```text
---- REPORTE DE ANALÍTICA DE EMBARQUES ---
-Total de embarques procesados: 3
-
-⏱️ Promedio de días de estancia: 1.00 días
-💰 Valor total de la mercancía: $45,500.50 MXN
-
-📦 Volumen de envíos por Paquetería:
-   - DHL: 1 embarque(s)
-   - FedEx: 1 embarque(s)
-   - Estafeta: 1 embarque(s)
-
-📍 Destinos principales:
-   - Puebla: 1 envío(s)
-   - CDMX: 1 envío(s)
-   - Monterrey: 1 envío(s)
-
-🗂️ Project Structure
-Plaintext
-simulacion_logistica/
-│
-├── core/                  # Business logic, data validation, and analytics engines
-│   └── analitica_embarques.py
-├── data/                  # Operational logs, error audits, and master shipping CSVs
-│   └── maestro_embarques_dummy.csv
-├── gui/                   # User interface and dashboard logic
-├── guias_maestras/        # Official documentation and waybill templates
-└── README.md              # Project documentation
 🛠️ Tech Stack
-Language: Python
+Backend Framework: FastAPI (Python)
 
-Data Processing: Pandas / NumPy
+Database: SQLite with relational constraints and custom row factories
 
-Automation & GUI: Custom Python GUI modules & scripting
+Data Validation: Pydantic v2 (strict typing, field constraints like gt=0)
 
-Version Control: Git & GitHub
+Testing: Pytest, HTTPX
+
+📦 API Endpoints
+1. Register a New Shipment
+Endpoint: POST /api/embarques
+
+Status Codes:
+
+201 Created: Successfully registered and logged.
+
+400 Bad Request: Sales Order (OV) already exists.
+
+Payload Example:
+
+JSON
+{
+  "ov": "OV-TEST-999",
+  "numero_pedido": "PED-TEST",
+  "cliente": "Global Retail Corp",
+  "cajas": 10,
+  "valor": 1250.00
+}
+2. Retrieve Shipment by OV
+Endpoint: GET /api/embarques/{ov}
+
+Status Codes:
+
+200 OK: Returns complete shipment details and current status.
+
+404 Not Found: Order does not exist in the system.
+
+🧪 Running Tests
+To verify the test suite and ensure zero regression failures across the logistics logic, execute:
+
+Bash
+pytest -v
