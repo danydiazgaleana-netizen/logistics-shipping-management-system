@@ -32,7 +32,7 @@ class VentanaLogin(ctk.CTkToplevel):
         
         self.autorizado = False
         self.usuarios_autorizados = {
-            "danydiazgaleana@gmail.com": "Caretas24",
+           
             "logistica@gruporev.com": "Caretas24",
             "embarques@gruporev.com": "Caretas24",
             "admin@gruporev.com": "Caretas24"
