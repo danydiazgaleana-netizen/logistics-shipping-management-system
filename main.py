@@ -33,9 +33,9 @@ class VentanaLogin(ctk.CTkToplevel):
         self.autorizado = False
         self.usuarios_autorizados = {
            
-            "logistica@gruporev.com": "Caretas24",
-            "embarques@gruporev.com": "Caretas24",
-            "admin@gruporev.com": "Caretas24"
+            "logistica@gruporev.com": "Caretas25",
+            "embarques@gruporev.com": "Caretas25",
+            "admin@gruporev.com": "Caretas25"
         }
         self.crear_widgets_login()
         self.protocol("WM_DELETE_WINDOW", self.cerrar_aplicacion)
